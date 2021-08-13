@@ -4,6 +4,8 @@ import 'dart:ui';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
+import 'package:story_view/widgets/readmore.dart';
 
 import '../controller/story_controller.dart';
 import '../utils.dart';
@@ -40,6 +42,36 @@ class StoryItem {
     required this.duration,
     this.shown = false,
   }) : assert(duration != null, "[duration] should not be null");
+
+  static _getReadMoreText(text,StoryController controller){
+    return      ReadMoreText(
+      text,
+      trimLines: 3,
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 16, color: Colors.white),
+      trimMode: TrimMode.Line,
+      callback: (status){
+        print("read more status $status");
+        // if(!status) /// if text expanded
+        //   controller.pause();
+        // else
+        //   controller.play();
+      },
+      // trimCollapsedText: 'read more',
+      // trimExpandedText: 'show less',
+      moreStyle: TextStyle(fontSize: 18,fontWeight: FontWeight.bold, color: Colors.blue),
+      lessStyle: TextStyle(fontSize: 18,fontWeight: FontWeight.bold, color: Colors.blue),
+    );
+  }
+
+  static Future<Color> getColorFromImage(String imageUrl) async {
+      PaletteGenerator generator =
+      await PaletteGenerator.fromImageProvider(NetworkImage(imageUrl),size: Size(400, 400));
+      print("generatedColor ${generator.mutedColor?.color} , ${generator.dominantColor?.color} ${generator.lightMutedColor?.color} ${generator.darkMutedColor?.color}");
+      return generator.dominantColor?.color??generator.dominantColor?.color??generator.darkMutedColor?.color??Colors.black;
+  }
+
+
 
   /// Short hand to create text-only page.
   ///
@@ -116,45 +148,43 @@ class StoryItem {
     Duration? duration,
   }) {
     return StoryItem(
-      Container(
-        key: key,
-        color: Colors.black,
-        child: Stack(
-          children: <Widget>[
-            StoryImage.url(
-              url,
-              controller: controller,
-              fit: imageFit,
-              requestHeaders: requestHeaders,
-            ),
-            SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  width: double.infinity,
-                  margin: EdgeInsets.only(
-                    bottom: 24,
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  color: caption != null ? Colors.black54 : Colors.transparent,
-                  child: caption != null
-                      ? Text(
-                          caption,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                      : SizedBox(),
+      FutureBuilder<Color>(
+          future: getColorFromImage(url),
+          key: key,
+        builder: (context, snapshot) {
+          return Container(
+            color: snapshot.hasData?snapshot.data:Colors.black,
+            child: Stack(
+              children: <Widget>[
+                StoryImage.url(
+                  url,
+                  controller: controller,
+                  fit: imageFit,
+                  requestHeaders: requestHeaders,
                 ),
-              ),
-            )
-          ],
-        ),
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.only(
+                        bottom: 24,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
+                      color: caption != null ? Colors.black54 : Colors.transparent,
+                      child: caption != null
+                          ?  _getReadMoreText(caption,controller)
+                          : SizedBox(),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          );
+        }
       ),
       shown: shown,
       duration: duration ?? Duration(seconds: 3),
@@ -165,7 +195,7 @@ class StoryItem {
   /// one passed to the `StoryView`
   factory StoryItem.inlineImage({
     required String url,
-    required Text caption,
+    required Widget caption,
     required StoryController controller,
     Key? key,
     BoxFit imageFit = BoxFit.cover,
@@ -176,39 +206,41 @@ class StoryItem {
     Duration? duration,
   }) {
     return StoryItem(
-      ClipRRect(
-        key: key,
-        child: Container(
-          color: Colors.grey[100],
-          child: Container(
-            color: Colors.black,
-            child: Stack(
-              children: <Widget>[
-                StoryImage.url(
-                  url,
-                  controller: controller,
-                  fit: imageFit,
-                  requestHeaders: requestHeaders,
-                ),
-                Container(
-                  margin: EdgeInsets.only(bottom: 16),
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Container(
-                      child: caption == null ? SizedBox() : caption,
-                      width: double.infinity,
+    FutureBuilder<Color>(
+      future: getColorFromImage(url),
+        builder: (context, snapshot) {
+          return ClipRRect(
+            key: key,
+            child: Container(
+              color: snapshot.hasData?snapshot.data:Colors.black,
+              child: Stack(
+                children: <Widget>[
+                  StoryImage.url(
+                    url,
+                    controller: controller,
+                    fit: imageFit,
+                    requestHeaders: requestHeaders,
+                  ),
+                  Container(
+                    margin: EdgeInsets.only(bottom: 16),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Container(
+                        child: caption == null ? SizedBox() : caption,
+                        width: double.infinity,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(roundedTop ? 8 : 0),
-          bottom: Radius.circular(roundedBottom ? 8 : 0),
-        ),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(roundedTop ? 8 : 0),
+              bottom: Radius.circular(roundedBottom ? 8 : 0),
+            ),
+          );
+        }
       ),
       shown: shown,
       duration: duration ?? Duration(seconds: 3),
@@ -248,11 +280,7 @@ class StoryItem {
                     color:
                         caption != null ? Colors.black54 : Colors.transparent,
                     child: caption != null
-                        ? Text(
-                            caption,
-                            style: TextStyle(fontSize: 15, color: Colors.white),
-                            textAlign: TextAlign.center,
-                          )
+                        ? _getReadMoreText(caption,controller)
                         : SizedBox(),
                   ),
                 ),
@@ -267,62 +295,61 @@ class StoryItem {
   /// Shorthand for creating a story item from an image provider such as `AssetImage`
   /// or `NetworkImage`. However, the story continues to play while the image loads
   /// up.
-  factory StoryItem.pageProviderImage(
-    ImageProvider image, {
-    Key? key,
-    BoxFit imageFit = BoxFit.fitWidth,
-    String? caption,
-    bool shown = false,
-    Duration? duration,
-  }) {
-    assert(imageFit != null, "[imageFit] should not be null");
-    return StoryItem(
-        Container(
-          key: key,
-          color: Colors.black,
-          child: Stack(
-            children: <Widget>[
-              Center(
-                child: Image(
-                  image: image,
-                  height: double.infinity,
-                  width: double.infinity,
-                  fit: imageFit,
-                ),
-              ),
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    width: double.infinity,
-                    margin: EdgeInsets.only(
-                      bottom: 24,
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 8,
-                    ),
-                    color:
-                        caption != null ? Colors.black54 : Colors.transparent,
-                    child: caption != null
-                        ? Text(
-                            caption,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          )
-                        : SizedBox(),
-                  ),
-                ),
-              )
-            ],
-          ),
-        ),
-        shown: shown,
-        duration: duration ?? Duration(seconds: 3));
-  }
+  // factory StoryItem.pageProviderImage(
+  //   ImageProvider image, {
+  //   required StoryController controller,
+  //   Key? key,
+  //   BoxFit imageFit = BoxFit.fitWidth,
+  //   String? caption,
+  //   bool shown = false,
+  //   Duration? duration,
+  // }) {
+  //   // assert(imageFit != null, "[imageFit] should not be null");
+  //   return StoryItem(
+  //      FutureBuilder(
+  //         future: getColorFromImage(),
+  //         builder: (context, snapshot) {
+  //           return Container(
+  //             key: key,
+  //             color: Colors.black,
+  //             child: Stack(
+  //               children: <Widget>[
+  //                 Center(
+  //                   child: Image(
+  //                     image: image,
+  //                     height: double.infinity,
+  //                     width: double.infinity,
+  //                     fit: imageFit,
+  //                   ),
+  //                 ),
+  //                 SafeArea(
+  //                   child: Align(
+  //                     alignment: Alignment.bottomCenter,
+  //                     child: Container(
+  //                       width: double.infinity,
+  //                       margin: EdgeInsets.only(
+  //                         bottom: 24,
+  //                       ),
+  //                       padding: EdgeInsets.symmetric(
+  //                         horizontal: 24,
+  //                         vertical: 8,
+  //                       ),
+  //                       color:
+  //                           caption != null ? Colors.black54 : Colors.transparent,
+  //                       child: caption != null
+  //                           ?  _getReadMoreText(caption,controller)
+  //                           : SizedBox(),
+  //                     ),
+  //                   ),
+  //                 )
+  //               ],
+  //             ),
+  //           );
+  //         }
+  //       ),
+  //       shown: shown,
+  //       duration: duration ?? Duration(seconds: 3));
+  // }
 
   /// Shorthand for creating an inline story item from an image provider such as `AssetImage`
   /// or `NetworkImage`. However, the story continues to play while the image loads
@@ -330,7 +357,7 @@ class StoryItem {
   factory StoryItem.inlineProviderImage(
     ImageProvider image, {
     Key? key,
-    Text? caption,
+    Widget? caption,
     bool shown = false,
     bool roundedTop = true,
     bool roundedBottom = false,
@@ -625,36 +652,13 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       color: Colors.white,
       child: Stack(
         children: <Widget>[
-          _currentView,
-          Align(
-            alignment: widget.progressPosition == ProgressPosition.top
-                ? Alignment.topCenter
-                : Alignment.bottomCenter,
-            child: SafeArea(
-              bottom: widget.inline ? false : true,
-              // we use SafeArea here for notched and bezeles phones
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: PageBar(
-                  widget.storyItems
-                      .map((it) => PageData(it!.duration, it.shown))
-                      .toList(),
-                  this._currentAnimation,
-                  key: UniqueKey(),
-                  indicatorHeight: widget.inline
-                      ? IndicatorHeight.small
-                      : IndicatorHeight.large,
-                ),
-              ),
-            ),
-          ),
           Align(
               alignment: Alignment.centerRight,
               heightFactor: 1,
               child: GestureDetector(
+                // behavior:HitTestBehavior.deferToChild,
+                behavior: HitTestBehavior.translucent,
+                child: _currentView,
                 onTapDown: (details) {
                   widget.controller.pause();
                 },
@@ -704,6 +708,31 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
                         verticalDragInfo = null;
                       },
               )),
+          Align(
+            alignment: widget.progressPosition == ProgressPosition.top
+                ? Alignment.topCenter
+                : Alignment.bottomCenter,
+            child: SafeArea(
+              bottom: widget.inline ? false : true,
+              // we use SafeArea here for notched and bezeles phones
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: PageBar(
+                  widget.storyItems
+                      .map((it) => PageData(it!.duration, it.shown))
+                      .toList(),
+                  this._currentAnimation,
+                  key: UniqueKey(),
+                  indicatorHeight: widget.inline
+                      ? IndicatorHeight.small
+                      : IndicatorHeight.large,
+                ),
+              ),
+            ),
+          ),
           Align(
             alignment: Alignment.centerLeft,
             heightFactor: 1,
