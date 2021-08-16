@@ -135,6 +135,10 @@ class StoryItem {
     );
   }
 
+  static bool _isTextNotEmpty(String? text){
+    return !(text==null || text.isEmpty);
+  }
+
   /// Factory constructor for page images. [controller] should be same instance as
   /// one passed to the `StoryView`
   factory StoryItem.pageImage({
@@ -174,8 +178,8 @@ class StoryItem {
                         horizontal: 24,
                         vertical: 8,
                       ),
-                      color: caption != null ? Colors.black54 : Colors.transparent,
-                      child: caption != null
+                      color: _isTextNotEmpty(caption) ? Colors.black54 : Colors.transparent,
+                      child: _isTextNotEmpty(caption)
                           ?  _getReadMoreText(caption,controller)
                           : SizedBox(),
                     ),
@@ -195,7 +199,7 @@ class StoryItem {
   /// one passed to the `StoryView`
   factory StoryItem.inlineImage({
     required String url,
-    required Widget caption,
+    required Widget? caption,
     required StoryController controller,
     Key? key,
     BoxFit imageFit = BoxFit.cover,
@@ -278,8 +282,8 @@ class StoryItem {
                     margin: EdgeInsets.only(bottom: 24),
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     color:
-                        caption != null ? Colors.black54 : Colors.transparent,
-                    child: caption != null
+                    _isTextNotEmpty(caption) ? Colors.black54 : Colors.transparent,
+                    child: _isTextNotEmpty(caption)
                         ? _getReadMoreText(caption,controller)
                         : SizedBox(),
                   ),
@@ -335,8 +339,8 @@ class StoryItem {
   //                         vertical: 8,
   //                       ),
   //                       color:
-  //                           caption != null ? Colors.black54 : Colors.transparent,
-  //                       child: caption != null
+  //                          _isTextNotEmpty(caption) ? Colors.black54 : Colors.transparent,
+  //                       child: _isTextNotEmpty(caption)
   //                           ?  _getReadMoreText(caption,controller)
   //                           : SizedBox(),
   //                     ),
