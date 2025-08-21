@@ -168,49 +168,21 @@ class _MoreStoriesState extends State<MoreStories> {
           StoryItem.pageImage(
             url:
                 "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
-            caption: Text(
-              "Still sampling",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            caption: "Still sampling",
             controller: storyController,
           ),
           StoryItem.pageImage(
               url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
-              caption: Text(
-                "Working with gifs",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              caption: "Working with gifs",
               controller: storyController),
           StoryItem.pageImage(
             url: "https://media.giphy.com/media/XcA8krYsrEAYXKf4UQ/giphy.gif",
-            caption: Text(
-              "Hello, from the other side",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            caption: "Hello, from the other side",
             controller: storyController,
           ),
           StoryItem.pageImage(
             url: "https://media.giphy.com/media/XcA8krYsrEAYXKf4UQ/giphy.gif",
-            caption: Text(
-              "Hello, from the other side2",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            caption: "Hello, from the other side2",
             controller: storyController,
           ),
         ],

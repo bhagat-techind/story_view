@@ -10,26 +10,26 @@ enum TrimMode {
 
 class ReadMoreText extends StatefulWidget {
   const ReadMoreText(
-      this.data, {
-        Key? key,
-        this.trimExpandedText = 'show less',
-        this.trimCollapsedText = 'read more',
-        this.colorClickableText,
-        this.trimLength = 240,
-        this.trimLines = 2,
-        this.trimMode = TrimMode.Length,
-        this.style,
-        this.textAlign,
-        this.textDirection,
-        this.locale,
-        this.textScaleFactor,
-        this.semanticsLabel,
-        this.moreStyle,
-        this.lessStyle,
-        this.delimiter = _kEllipsis + ' ',
-        this.delimiterStyle,
-        this.callback,
-      }) : super(key: key);
+    this.data, {
+    Key? key,
+    this.trimExpandedText = 'show less',
+    this.trimCollapsedText = 'read more',
+    this.colorClickableText,
+    this.trimLength = 240,
+    this.trimLines = 2,
+    this.trimMode = TrimMode.Length,
+    this.style,
+    this.textAlign,
+    this.textDirection,
+    this.locale,
+    this.textScaleFactor,
+    this.semanticsLabel,
+    this.moreStyle,
+    this.lessStyle,
+    this.delimiter = _kEllipsis + ' ',
+    this.delimiterStyle,
+    this.callback,
+  }) : super(key: key);
 
   /// Used on TrimMode.Length
   final int trimLength;
@@ -100,7 +100,7 @@ class ReadMoreTextState extends State<ReadMoreText> {
     final locale = widget.locale ?? Localizations.maybeLocaleOf(context);
 
     final colorClickableText =
-        widget.colorClickableText ?? Theme.of(context).accentColor;
+        widget.colorClickableText ?? Theme.of(context).colorScheme.secondary;
     final _defaultLessStyle = widget.lessStyle ??
         effectiveTextStyle?.copyWith(color: colorClickableText);
     final _defaultMoreStyle = widget.moreStyle ??
@@ -116,11 +116,11 @@ class ReadMoreTextState extends State<ReadMoreText> {
     TextSpan _delimiter = TextSpan(
       text: _readMore
           ? widget.trimCollapsedText.isNotEmpty
-          ? widget.delimiter
-          : ''
+              ? widget.delimiter
+              : ''
           : widget.trimExpandedText.isNotEmpty
-          ? widget.delimiter
-          : '',
+              ? widget.delimiter
+              : '',
       style: _defaultDelimiterStyle,
       recognizer: TapGestureRecognizer()..onTap = _onTapLink,
     );
@@ -204,7 +204,7 @@ class ReadMoreTextState extends State<ReadMoreText> {
                 style: effectiveTextStyle,
                 text: _readMore
                     ? widget.data.substring(0, endIndex) +
-                    (linkLongerThanLine ? _kLineSeparator : '')
+                        (linkLongerThanLine ? _kLineSeparator : '')
                     : widget.data,
                 children: <TextSpan>[_delimiter, link],
               );
@@ -215,9 +215,6 @@ class ReadMoreTextState extends State<ReadMoreText> {
               );
             }
             break;
-          default:
-            throw Exception(
-                'TrimMode type: ${widget.trimMode} is not supported');
         }
 
         return RichText(

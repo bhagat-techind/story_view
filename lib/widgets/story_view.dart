@@ -36,8 +36,7 @@ class StoryItem {
 
   /// The page content
   final Widget view;
-  StoryItem(this.view, {required this.duration, this.shown = false})
-    : assert(duration != null, "[duration] should not be null");
+  StoryItem(this.view, {required this.duration, this.shown = false});
 
   static _getReadMoreText(text, StoryController controller) {
     return ReadMoreText(
@@ -117,14 +116,12 @@ class StoryItem {
             bottom: Radius.circular(roundedBottom ? 8 : 0),
           ),
         ),
-        padding:
-            textOuterPadding ??
+        padding: textOuterPadding ??
             EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Center(
           child: Text(
             title,
-            style:
-                textStyle?.copyWith(
+            style: textStyle?.copyWith(
                   color: contrast > 1.8 ? Colors.white : Colors.black,
                 ) ??
                 TextStyle(
@@ -152,7 +149,7 @@ class StoryItem {
     required StoryController controller,
     Key? key,
     BoxFit imageFit = BoxFit.fitWidth,
-    Text? caption,
+    String? caption,
     bool shown = false,
     Map<String, dynamic>? requestHeaders,
     Widget? loadingWidget,
@@ -183,8 +180,7 @@ class StoryItem {
                     child: Container(
                       width: double.infinity,
                       margin: EdgeInsets.only(bottom: 24),
-                      padding:
-                          captionOuterPadding ??
+                      padding: captionOuterPadding ??
                           EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                       color: _isTextNotEmpty(caption)
                           ? Colors.black54
@@ -242,15 +238,13 @@ class StoryItem {
                   ),
                   Container(
                     margin: EdgeInsets.only(bottom: 16),
-                    padding:
-                        captionOuterPadding ??
+                    padding: captionOuterPadding ??
                         EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: Align(
                       alignment: Alignment.bottomLeft,
                       child: Container(
-                        child: caption == null
-                            ? const SizedBox.shrink()
-                            : caption,
+                        child:
+                            caption == null ? const SizedBox.shrink() : caption,
                         width: double.infinity,
                       ),
                     ),
@@ -278,7 +272,7 @@ class StoryItem {
     Key? key,
     Duration? duration,
     BoxFit imageFit = BoxFit.fitWidth,
-    Widget? caption,
+    String? caption,
     bool shown = false,
     Map<String, dynamic>? requestHeaders,
     Widget? loadingWidget,
@@ -334,7 +328,6 @@ class StoryItem {
     bool shown = false,
     Duration? duration,
   }) {
-    assert(imageFit != null, "[imageFit] should not be null");
     return StoryItem(
       Container(
         key: key,
@@ -888,8 +881,8 @@ class PageBarState extends State<PageBar> {
               indicatorHeight: widget.indicatorHeight == IndicatorHeight.large
                   ? 5
                   : widget.indicatorHeight == IndicatorHeight.medium
-                  ? 3
-                  : 2,
+                      ? 3
+                      : 2,
               indicatorColor: widget.indicatorColor,
               indicatorForegroundColor: widget.indicatorForegroundColor,
             ),
