@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
@@ -13,11 +12,11 @@ import 'story_image.dart';
 import 'story_video.dart';
 
 /// Indicates where the progress indicators should be placed.
-enum ProgressPosition { top, bottom }
+enum ProgressPosition { top, bottom, none }
 
 /// This is used to specify the height of the progress indicator. Inline stories
 /// should use [small]
-enum IndicatorHeight { small, large }
+enum IndicatorHeight { small, medium, large }
 
 /// This is a representation of a story item (or page).
 class StoryItem {
@@ -37,20 +36,16 @@ class StoryItem {
 
   /// The page content
   final Widget view;
-  StoryItem(
-    this.view, {
-    required this.duration,
-    this.shown = false,
-  }) : assert(duration != null, "[duration] should not be null");
+  StoryItem(this.view, {required this.duration, this.shown = false});
 
-  static _getReadMoreText(text,StoryController controller){
-    return      ReadMoreText(
+  static _getReadMoreText(text, StoryController controller) {
+    return ReadMoreText(
       text,
       trimLines: 3,
       textAlign: TextAlign.center,
       style: TextStyle(fontSize: 16, color: Colors.white),
       trimMode: TrimMode.Line,
-      callback: (status){
+      callback: (status) {
         print("read more status $status");
         // if(!status) /// if text expanded
         //   controller.pause();
@@ -59,19 +54,32 @@ class StoryItem {
       },
       // trimCollapsedText: 'read more',
       // trimExpandedText: 'show less',
-      moreStyle: TextStyle(fontSize: 18,fontWeight: FontWeight.bold, color: Colors.blue),
-      lessStyle: TextStyle(fontSize: 18,fontWeight: FontWeight.bold, color: Colors.blue),
+      moreStyle: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue,
+      ),
+      lessStyle: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue,
+      ),
     );
   }
 
   static Future<Color> getColorFromImage(String imageUrl) async {
-      PaletteGenerator generator =
-      await PaletteGenerator.fromImageProvider(NetworkImage(imageUrl),size: Size(400, 400));
-      print("generatedColor ${generator.mutedColor?.color} , ${generator.dominantColor?.color} ${generator.lightMutedColor?.color} ${generator.darkMutedColor?.color}");
-      return generator.dominantColor?.color??generator.dominantColor?.color??generator.darkMutedColor?.color??Colors.black;
+    PaletteGenerator generator = await PaletteGenerator.fromImageProvider(
+      NetworkImage(imageUrl),
+      size: Size(400, 400),
+    );
+    print(
+      "generatedColor ${generator.mutedColor?.color} , ${generator.dominantColor?.color} ${generator.lightMutedColor?.color} ${generator.darkMutedColor?.color}",
+    );
+    return generator.dominantColor?.color ??
+        generator.dominantColor?.color ??
+        generator.darkMutedColor?.color ??
+        Colors.black;
   }
-
-
 
   /// Short hand to create text-only page.
   ///
@@ -89,17 +97,14 @@ class StoryItem {
     bool shown = false,
     bool roundedTop = false,
     bool roundedBottom = false,
+    EdgeInsetsGeometry? textOuterPadding,
     Duration? duration,
   }) {
-    double contrast = ContrastHelper.contrast([
-      backgroundColor.red,
-      backgroundColor.green,
-      backgroundColor.blue,
-    ], [
-      255,
-      255,
-      255
-    ] /** white text */);
+    double contrast = ContrastHelper.contrast(
+      [backgroundColor.r, backgroundColor.g, backgroundColor.b],
+      [255.0, 255.0, 255.0],
+      /** white text */
+    );
 
     return StoryItem(
       Container(
@@ -111,10 +116,8 @@ class StoryItem {
             bottom: Radius.circular(roundedBottom ? 8 : 0),
           ),
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 16,
-        ),
+        padding: textOuterPadding ??
+            EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Center(
           child: Text(
             title,
@@ -135,8 +138,8 @@ class StoryItem {
     );
   }
 
-  static bool _isTextNotEmpty(String? text){
-    return !(text==null || text.isEmpty);
+  static bool _isTextNotEmpty(String? text) {
+    return !(text == null || text.isEmpty);
   }
 
   /// Factory constructor for page images. [controller] should be same instance as
@@ -149,15 +152,18 @@ class StoryItem {
     String? caption,
     bool shown = false,
     Map<String, dynamic>? requestHeaders,
+    Widget? loadingWidget,
+    Widget? errorWidget,
+    EdgeInsetsGeometry? captionOuterPadding,
     Duration? duration,
   }) {
     return StoryItem(
       FutureBuilder<Color>(
-          future: getColorFromImage(url),
-          key: key,
+        future: getColorFromImage(url),
+        key: key,
         builder: (context, snapshot) {
           return Container(
-            color: snapshot.hasData?snapshot.data:Colors.black,
+            color: snapshot.hasData ? snapshot.data : Colors.black,
             child: Stack(
               children: <Widget>[
                 StoryImage.url(
@@ -165,30 +171,30 @@ class StoryItem {
                   controller: controller,
                   fit: imageFit,
                   requestHeaders: requestHeaders,
+                  loadingWidget: loadingWidget,
+                  errorWidget: errorWidget,
                 ),
                 SafeArea(
                   child: Align(
                     alignment: Alignment.bottomCenter,
                     child: Container(
                       width: double.infinity,
-                      margin: EdgeInsets.only(
-                        bottom: 24,
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
-                      ),
-                      color: _isTextNotEmpty(caption) ? Colors.black54 : Colors.transparent,
+                      margin: EdgeInsets.only(bottom: 24),
+                      padding: captionOuterPadding ??
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      color: _isTextNotEmpty(caption)
+                          ? Colors.black54
+                          : Colors.transparent,
                       child: _isTextNotEmpty(caption)
-                          ?  _getReadMoreText(caption,controller)
-                          : SizedBox(),
+                          ? _getReadMoreText(caption, controller)
+                          : const SizedBox.shrink(),
                     ),
                   ),
-                )
+                ),
               ],
             ),
           );
-        }
+        },
       ),
       shown: shown,
       duration: duration ?? Duration(seconds: 3),
@@ -207,16 +213,19 @@ class StoryItem {
     bool shown = false,
     bool roundedTop = true,
     bool roundedBottom = false,
+    Widget? loadingWidget,
+    Widget? errorWidget,
+    EdgeInsetsGeometry? captionOuterPadding,
     Duration? duration,
   }) {
     return StoryItem(
-    FutureBuilder<Color>(
-      future: getColorFromImage(url),
+      FutureBuilder<Color>(
+        future: getColorFromImage(url),
         builder: (context, snapshot) {
           return ClipRRect(
             key: key,
             child: Container(
-              color: snapshot.hasData?snapshot.data:Colors.black,
+              color: snapshot.hasData ? snapshot.data : Colors.black,
               child: Stack(
                 children: <Widget>[
                   StoryImage.url(
@@ -224,14 +233,18 @@ class StoryItem {
                     controller: controller,
                     fit: imageFit,
                     requestHeaders: requestHeaders,
+                    loadingWidget: loadingWidget,
+                    errorWidget: errorWidget,
                   ),
                   Container(
                     margin: EdgeInsets.only(bottom: 16),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: captionOuterPadding ??
+                        EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: Align(
                       alignment: Alignment.bottomLeft,
                       child: Container(
-                        child: caption == null ? SizedBox() : caption,
+                        child:
+                            caption == null ? const SizedBox.shrink() : caption,
                         width: double.infinity,
                       ),
                     ),
@@ -244,7 +257,7 @@ class StoryItem {
               bottom: Radius.circular(roundedBottom ? 8 : 0),
             ),
           );
-        }
+        },
       ),
       shown: shown,
       duration: duration ?? Duration(seconds: 3),
@@ -262,98 +275,98 @@ class StoryItem {
     String? caption,
     bool shown = false,
     Map<String, dynamic>? requestHeaders,
+    Widget? loadingWidget,
+    Widget? errorWidget,
   }) {
     return StoryItem(
-        Container(
-          key: key,
-          color: Colors.black,
-          child: Stack(
-            children: <Widget>[
-              StoryVideo.url(
-                url,
-                controller: controller,
-                requestHeaders: requestHeaders,
-              ),
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    width: double.infinity,
-                    margin: EdgeInsets.only(bottom: 24),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    color:
-                    _isTextNotEmpty(caption) ? Colors.black54 : Colors.transparent,
-                    child: _isTextNotEmpty(caption)
-                        ? _getReadMoreText(caption,controller)
-                        : SizedBox(),
-                  ),
+      Container(
+        key: key,
+        color: Colors.black,
+        child: Stack(
+          children: <Widget>[
+            StoryVideo.url(
+              url,
+              controller: controller,
+              requestHeaders: requestHeaders,
+              loadingWidget: loadingWidget,
+              errorWidget: errorWidget,
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.only(bottom: 24),
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  color: caption != null ? Colors.black54 : Colors.transparent,
+                  child: caption != null
+                      ? Text(
+                          caption,
+                          style: TextStyle(fontSize: 15, color: Colors.white),
+                          textAlign: TextAlign.center,
+                        )
+                      : SizedBox(),
                 ),
-              )
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
-        shown: shown,
-        duration: duration ?? Duration(seconds: 10));
+      ),
+      shown: shown,
+      duration: duration ?? Duration(seconds: 10),
+    );
   }
 
   /// Shorthand for creating a story item from an image provider such as `AssetImage`
   /// or `NetworkImage`. However, the story continues to play while the image loads
   /// up.
-  // factory StoryItem.pageProviderImage(
-  //   ImageProvider image, {
-  //   required StoryController controller,
-  //   Key? key,
-  //   BoxFit imageFit = BoxFit.fitWidth,
-  //   String? caption,
-  //   bool shown = false,
-  //   Duration? duration,
-  // }) {
-  //   // assert(imageFit != null, "[imageFit] should not be null");
-  //   return StoryItem(
-  //      FutureBuilder(
-  //         future: getColorFromImage(),
-  //         builder: (context, snapshot) {
-  //           return Container(
-  //             key: key,
-  //             color: Colors.black,
-  //             child: Stack(
-  //               children: <Widget>[
-  //                 Center(
-  //                   child: Image(
-  //                     image: image,
-  //                     height: double.infinity,
-  //                     width: double.infinity,
-  //                     fit: imageFit,
-  //                   ),
-  //                 ),
-  //                 SafeArea(
-  //                   child: Align(
-  //                     alignment: Alignment.bottomCenter,
-  //                     child: Container(
-  //                       width: double.infinity,
-  //                       margin: EdgeInsets.only(
-  //                         bottom: 24,
-  //                       ),
-  //                       padding: EdgeInsets.symmetric(
-  //                         horizontal: 24,
-  //                         vertical: 8,
-  //                       ),
-  //                       color:
-  //                          _isTextNotEmpty(caption) ? Colors.black54 : Colors.transparent,
-  //                       child: _isTextNotEmpty(caption)
-  //                           ?  _getReadMoreText(caption,controller)
-  //                           : SizedBox(),
-  //                     ),
-  //                   ),
-  //                 )
-  //               ],
-  //             ),
-  //           );
-  //         }
-  //       ),
-  //       shown: shown,
-  //       duration: duration ?? Duration(seconds: 3));
-  // }
+  factory StoryItem.pageProviderImage(
+    ImageProvider image, {
+    Key? key,
+    BoxFit imageFit = BoxFit.fitWidth,
+    String? caption,
+    bool shown = false,
+    Duration? duration,
+  }) {
+    return StoryItem(
+      Container(
+        key: key,
+        color: Colors.black,
+        child: Stack(
+          children: <Widget>[
+            Center(
+              child: Image(
+                image: image,
+                height: double.infinity,
+                width: double.infinity,
+                fit: imageFit,
+              ),
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.only(bottom: 24),
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  color: caption != null ? Colors.black54 : Colors.transparent,
+                  child: caption != null
+                      ? Text(
+                          caption,
+                          style: TextStyle(fontSize: 15, color: Colors.white),
+                          textAlign: TextAlign.center,
+                        )
+                      : SizedBox(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      shown: shown,
+      duration: duration ?? Duration(seconds: 3),
+    );
+  }
 
   /// Shorthand for creating an inline story item from an image provider such as `AssetImage`
   /// or `NetworkImage`. However, the story continues to play while the image loads
@@ -371,23 +384,16 @@ class StoryItem {
       Container(
         key: key,
         decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(roundedTop ? 8 : 0),
-              bottom: Radius.circular(roundedBottom ? 8 : 0),
-            ),
-            image: DecorationImage(
-              image: image,
-              fit: BoxFit.cover,
-            )),
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(roundedTop ? 8 : 0),
+            bottom: Radius.circular(roundedBottom ? 8 : 0),
+          ),
+          image: DecorationImage(image: image, fit: BoxFit.cover),
+        ),
         child: Container(
-          margin: EdgeInsets.only(
-            bottom: 16,
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 8,
-          ),
+          margin: EdgeInsets.only(bottom: 16),
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Align(
             alignment: Alignment.bottomLeft,
             child: Container(
@@ -420,8 +426,8 @@ class StoryView extends StatefulWidget {
   /// provide this callback so as to enable scroll events on the list view.
   final Function(Direction?)? onVerticalSwipeComplete;
 
-  /// Callback for when a story is currently being shown.
-  final ValueChanged<StoryItem>? onStoryShow;
+  /// Callback for when a story and it index is currently being shown.
+  final void Function(StoryItem storyItem, int index)? onStoryShow;
 
   /// Where the progress indicator should be placed.
   final ProgressPosition progressPosition;
@@ -434,8 +440,20 @@ class StoryView extends StatefulWidget {
   /// a [ListView] or [Column]) then set this to `true`.
   final bool inline;
 
-  // Controls the playback of the stories
+  /// Controls the playback of the stories
   final StoryController controller;
+
+  /// Indicator Color
+  final Color? indicatorColor;
+
+  /// Indicator Foreground Color
+  final Color? indicatorForegroundColor;
+
+  /// Determine the height of the indicator
+  final IndicatorHeight indicatorHeight;
+
+  /// Use this if you want to give outer padding to the indicator
+  final EdgeInsetsGeometry indicatorOuterPadding;
 
   StoryView({
     required this.storyItems,
@@ -446,14 +464,14 @@ class StoryView extends StatefulWidget {
     this.repeat = false,
     this.inline = false,
     this.onVerticalSwipeComplete,
-  })  : assert(storyItems != null && storyItems.length > 0,
-            "[storyItems] should not be null or empty"),
-        assert(progressPosition != null, "[progressPosition] cannot be null"),
-        assert(
-          repeat != null,
-          "[repeat] cannot be null",
-        ),
-        assert(inline != null, "[inline] cannot be null");
+    this.indicatorColor,
+    this.indicatorForegroundColor,
+    this.indicatorHeight = IndicatorHeight.large,
+    this.indicatorOuterPadding = const EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: 8,
+    ),
+  });
 
   @override
   State<StatefulWidget> createState() {
@@ -498,8 +516,9 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       });
     }
 
-    this._playbackSubscription =
-        widget.controller.playbackNotifier.listen((playbackStatus) {
+    this._playbackSubscription = widget.controller.playbackNotifier.listen((
+      playbackStatus,
+    ) {
       switch (playbackStatus) {
         case PlaybackState.play:
           _removeNextHold();
@@ -550,12 +569,16 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       return !it!.shown;
     })!;
 
+    final storyItemIndex = widget.storyItems.indexOf(storyItem);
+
     if (widget.onStoryShow != null) {
-      widget.onStoryShow!(storyItem);
+      widget.onStoryShow!(storyItem, storyItemIndex);
     }
 
-    _animationController =
-        AnimationController(duration: storyItem.duration, vsync: this);
+    _animationController = AnimationController(
+      duration: storyItem.duration,
+      vsync: this,
+    );
 
     _animationController!.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -569,8 +592,10 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       }
     });
 
-    _currentAnimation =
-        Tween(begin: 0.0, end: 1.0).animate(_animationController!);
+    _currentAnimation = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_animationController!);
 
     widget.controller.play();
   }
@@ -630,8 +655,10 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       }
     } else {
       // this is the last page, progress animation should skip to end
-      _animationController!
-          .animateTo(1.0, duration: Duration(milliseconds: 10));
+      _animationController!.animateTo(
+        1.0,
+        duration: Duration(milliseconds: 10),
+      );
     }
   }
 
@@ -656,62 +683,7 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
       color: Colors.white,
       child: Stack(
         children: <Widget>[
-          Align(
-              alignment: Alignment.centerRight,
-              heightFactor: 1,
-              child: GestureDetector(
-                // behavior:HitTestBehavior.deferToChild,
-                behavior: HitTestBehavior.translucent,
-                child: _currentView,
-                onTapDown: (details) {
-                  widget.controller.pause();
-                },
-                onTapCancel: () {
-                  widget.controller.play();
-                },
-                onTapUp: (details) {
-                  // if debounce timed out (not active) then continue anim
-                  if (_nextDebouncer?.isActive == false) {
-                    widget.controller.play();
-                  } else {
-                    widget.controller.next();
-                  }
-                },
-                onVerticalDragStart: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        widget.controller.pause();
-                      },
-                onVerticalDragCancel: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : () {
-                        widget.controller.play();
-                      },
-                onVerticalDragUpdate: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        if (verticalDragInfo == null) {
-                          verticalDragInfo = VerticalDragInfo();
-                        }
-
-                        verticalDragInfo!.update(details.primaryDelta!);
-
-                        // TODO: provide callback interface for animation purposes
-                      },
-                onVerticalDragEnd: widget.onVerticalSwipeComplete == null
-                    ? null
-                    : (details) {
-                        widget.controller.play();
-                        // finish up drag cycle
-                        if (!verticalDragInfo!.cancel &&
-                            widget.onVerticalSwipeComplete != null) {
-                          widget.onVerticalSwipeComplete!(
-                              verticalDragInfo!.direction);
-                        }
-
-                        verticalDragInfo = null;
-                      },
-              )),
+          _currentView,
           Align(
             alignment: widget.progressPosition == ProgressPosition.top
                 ? Alignment.topCenter
@@ -720,10 +692,87 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
               bottom: widget.inline ? false : true,
               // we use SafeArea here for notched and bezeles phones
               child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: PageBar(
+                  widget.storyItems
+                      .map((it) => PageData(it!.duration, it.shown))
+                      .toList(),
+                  this._currentAnimation,
+                  key: UniqueKey(),
+                  indicatorHeight: widget.inline
+                      ? IndicatorHeight.small
+                      : IndicatorHeight.large,
                 ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            heightFactor: 1,
+            child: GestureDetector(
+              // behavior:HitTestBehavior.deferToChild,
+              behavior: HitTestBehavior.translucent,
+              child: _currentView,
+              onTapDown: (details) {
+                widget.controller.pause();
+              },
+              onTapCancel: () {
+                widget.controller.play();
+              },
+              onTapUp: (details) {
+                // if debounce timed out (not active) then continue anim
+                if (_nextDebouncer?.isActive == false) {
+                  widget.controller.play();
+                } else {
+                  widget.controller.next();
+                }
+              },
+              onVerticalDragStart: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : (details) {
+                      widget.controller.pause();
+                    },
+              onVerticalDragCancel: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : () {
+                      widget.controller.play();
+                    },
+              onVerticalDragUpdate: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : (details) {
+                      if (verticalDragInfo == null) {
+                        verticalDragInfo = VerticalDragInfo();
+                      }
+
+                      verticalDragInfo!.update(details.primaryDelta!);
+
+                      // TODO: provide callback interface for animation purposes
+                    },
+              onVerticalDragEnd: widget.onVerticalSwipeComplete == null
+                  ? null
+                  : (details) {
+                      widget.controller.play();
+                      // finish up drag cycle
+                      if (!verticalDragInfo!.cancel &&
+                          widget.onVerticalSwipeComplete != null) {
+                        widget.onVerticalSwipeComplete!(
+                          verticalDragInfo!.direction,
+                        );
+                      }
+
+                      verticalDragInfo = null;
+                    },
+            ),
+          ),
+          Align(
+            alignment: widget.progressPosition == ProgressPosition.top
+                ? Alignment.topCenter
+                : Alignment.bottomCenter,
+            child: SafeArea(
+              bottom: widget.inline ? false : true,
+              // we use SafeArea here for notched and bezeles phones
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: PageBar(
                   widget.storyItems
                       .map((it) => PageData(it!.duration, it.shown))
@@ -741,14 +790,17 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
             alignment: Alignment.centerLeft,
             heightFactor: 1,
             child: SizedBox(
-                child: GestureDetector(onTap: () {
+              child: GestureDetector(
+                onTap: () {
                   if (_nextDebouncer?.isActive == false) {
                     widget.controller.play();
                   } else {
                     widget.controller.previous();
                   }
-                }),
-                width: 70),
+                },
+              ),
+              width: 70,
+            ),
           ),
         ],
       ),
@@ -771,11 +823,15 @@ class PageBar extends StatefulWidget {
   final List<PageData> pages;
   final Animation<double>? animation;
   final IndicatorHeight indicatorHeight;
+  final Color? indicatorColor;
+  final Color? indicatorForegroundColor;
 
   PageBar(
     this.pages,
     this.animation, {
     this.indicatorHeight = IndicatorHeight.large,
+    this.indicatorColor,
+    this.indicatorForegroundColor,
     Key? key,
   }) : super(key: key);
 
@@ -793,7 +849,7 @@ class PageBarState extends State<PageBar> {
     super.initState();
 
     int count = widget.pages.length;
-    spacing = (count > 15) ? 1 : ((count > 10) ? 2 : 4);
+    spacing = (count > 15) ? 2 : ((count > 10) ? 3 : 4);
 
     widget.animation!.addListener(() {
       setState(() {});
@@ -818,11 +874,17 @@ class PageBarState extends State<PageBar> {
         return Expanded(
           child: Container(
             padding: EdgeInsets.only(
-                right: widget.pages.last == it ? 0 : this.spacing),
+              right: widget.pages.last == it ? 0 : this.spacing,
+            ),
             child: StoryProgressIndicator(
               isPlaying(it) ? widget.animation!.value : (it.shown ? 1 : 0),
-              indicatorHeight:
-                  widget.indicatorHeight == IndicatorHeight.large ? 5 : 3,
+              indicatorHeight: widget.indicatorHeight == IndicatorHeight.large
+                  ? 5
+                  : widget.indicatorHeight == IndicatorHeight.medium
+                      ? 3
+                      : 2,
+              indicatorColor: widget.indicatorColor,
+              indicatorForegroundColor: widget.indicatorForegroundColor,
             ),
           ),
         );
@@ -837,25 +899,26 @@ class StoryProgressIndicator extends StatelessWidget {
   /// From `0.0` to `1.0`, determines the progress of the indicator
   final double value;
   final double indicatorHeight;
+  final Color? indicatorColor;
+  final Color? indicatorForegroundColor;
 
   StoryProgressIndicator(
     this.value, {
     this.indicatorHeight = 5,
-  }) : assert(indicatorHeight != null && indicatorHeight > 0,
-            "[indicatorHeight] should not be null or less than 1");
+    this.indicatorColor,
+    this.indicatorForegroundColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: Size.fromHeight(
-        this.indicatorHeight,
-      ),
+      size: Size.fromHeight(this.indicatorHeight),
       foregroundPainter: IndicatorOval(
-        Colors.white.withOpacity(0.8),
+        this.indicatorForegroundColor ?? Colors.white.withValues(alpha: 0.8),
         this.value,
       ),
       painter: IndicatorOval(
-        Colors.white.withOpacity(0.4),
+        this.indicatorColor ?? Colors.white.withValues(alpha: 0.4),
         1.0,
       ),
     );
@@ -872,10 +935,12 @@ class IndicatorOval extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = this.color;
     canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(0, 0, size.width * this.widthFactor, size.height),
-            Radius.circular(3)),
-        paint);
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width * this.widthFactor, size.height),
+        Radius.circular(3),
+      ),
+      paint,
+    );
   }
 
   @override
@@ -886,7 +951,7 @@ class IndicatorOval extends CustomPainter {
 
 /// Concept source: https://stackoverflow.com/a/9733420
 class ContrastHelper {
-  static double luminance(int? r, int? g, int? b) {
+  static double luminance(double? r, double? g, double? b) {
     final a = [r, g, b].map((it) {
       double value = it!.toDouble() / 255.0;
       return value <= 0.03928

@@ -8,7 +8,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Demo',
+        title: 'Story View Example',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.green,
@@ -82,7 +82,7 @@ class Home extends StatelessWidget {
                     ),
                   )
                 ],
-                onStoryShow: (s) {
+                onStoryShow: (storyItem, index) {
                   print("Showing a story");
                 },
                 onComplete: () {
@@ -186,7 +186,7 @@ class _MoreStoriesState extends State<MoreStories> {
             controller: storyController,
           ),
         ],
-        onStoryShow: (s) {
+        onStoryShow: (storyItem, index) {
           print("Showing a story");
         },
         onComplete: () {

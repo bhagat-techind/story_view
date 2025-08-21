@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../utils.dart';
@@ -29,8 +28,8 @@ class ImageLoader {
       onComplete();
     }
 
-    final fileStream = DefaultCacheManager()
-        .getFileStream(this.url, headers: this.requestHeaders as Map<String, String>?);
+    final fileStream = DefaultCacheManager().getFileStream(this.url,
+        headers: this.requestHeaders as Map<String, String>?);
 
     fileStream.listen(
       (fileResponse) {
@@ -46,8 +45,7 @@ class ImageLoader {
 
         this.state = LoadState.success;
 
-        PaintingBinding.instance!.instantiateImageCodec(imageBytes).then(
-            (codec) {
+        ui.instantiateImageCodec(imageBytes).then((codec) {
           this.frames = codec;
           onComplete();
         }, onError: (error) {
@@ -72,12 +70,16 @@ class StoryImage extends StatefulWidget {
   final BoxFit? fit;
 
   final StoryController? controller;
+  final Widget? loadingWidget;
+  final Widget? errorWidget;
 
   StoryImage(
     this.imageLoader, {
     Key? key,
     this.controller,
     this.fit,
+    this.loadingWidget,
+    this.errorWidget,
   }) : super(key: key ?? UniqueKey());
 
   /// Use this shorthand to fetch images/gifs from the provided [url]
@@ -86,6 +88,8 @@ class StoryImage extends StatefulWidget {
     StoryController? controller,
     Map<String, dynamic>? requestHeaders,
     BoxFit fit = BoxFit.fitWidth,
+    Widget? loadingWidget,
+    Widget? errorWidget,
     Key? key,
   }) {
     return StoryImage(
@@ -95,7 +99,10 @@ class StoryImage extends StatefulWidget {
         ),
         controller: controller,
         fit: fit,
-        key: key);
+        loadingWidget: loadingWidget,
+        errorWidget: errorWidget,
+        key: key,
+    );
   }
 
   @override
@@ -163,7 +170,7 @@ class StoryImageState extends State<StoryImage> {
     this._timer?.cancel();
 
     if (widget.controller != null &&
-        widget.controller!.playbackNotifier.valueWrapper!.value ==
+        widget.controller!.playbackNotifier.stream.value ==
             PlaybackState.pause) {
       return;
     }
@@ -179,41 +186,71 @@ class StoryImageState extends State<StoryImage> {
     setState(() {});
   }
 
-  Widget getContentView() {
-    switch (widget.imageLoader.state) {
-      case LoadState.success:
-        return RawImage(
-          image: this.currentFrame,
-          fit: widget.fit,
-        );
-      case LoadState.failure:
-        return Center(
-            child: Text(
-          "Image failed to load.",
-          style: TextStyle(
-            color: Colors.white,
-          ),
-        ));
-      default:
-        return Center(
-          child: Container(
-            width: 70,
-            height: 70,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 3,
-            ),
-          ),
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      child: getContentView(),
+      child: ImageContentView(
+        imageLoader: widget.imageLoader,
+        fit: widget.fit,
+        currentFrame: this.currentFrame,
+        loadingWidget: widget.loadingWidget,
+        errorWidget: widget.errorWidget,
+      ),
     );
   }
 }
+
+/**
+ * @name ImageContentView
+ * @description Stateless widget that displays an image based on loading state: success, failure, or loading.
+ */
+class ImageContentView extends StatelessWidget {
+  final ImageLoader imageLoader;
+  final BoxFit? fit;
+  final ui.Image? currentFrame;
+  final Widget? loadingWidget;
+  final Widget? errorWidget;
+
+  const ImageContentView({
+    Key? key,
+    required this.imageLoader,
+    required this.fit,
+    required this.currentFrame,
+    this.loadingWidget,
+    this.errorWidget,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (imageLoader.state) {
+      case LoadState.success:
+        return RawImage(
+          image: currentFrame,
+          fit: fit,
+        );
+      case LoadState.failure:
+        return Center(
+          child: errorWidget ??
+              const Text(
+                "Image failed to load.",
+                style: TextStyle(color: Colors.white),
+              ),
+        );
+      default:
+        return Center(
+          child: loadingWidget ??
+              const SizedBox(
+                width: 70,
+                height: 70,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 3,
+                ),
+              ),
+        );
+    }
+  }
+}
+
